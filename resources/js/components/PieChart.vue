@@ -1,37 +1,49 @@
 <template>
-  <loading-card :loading="loading" class="min-h-40">
-    <div class="h-12 flex items-center px-6 mt-4">
+  <LoadingCard :loading="loading" class="px-6 py-4">
+    <div class="h-6 mb-4 flex items-center">
       <h4 class="mr-3 leading-tight text-sm font-bold">{{ checkTitle }}</h4>
-      <div class="flex relative ml-auto flex-shrink-0">
-        <default-button size="xs" class="mr-2" @click="fillData()" v-show="buttonRefresh">
-          <icon-refresh />
-        </default-button>
-        <default-button size="xs" class="mr-2" @click="reloadPage()" v-show="buttonReload">
-          <icon-refresh />
-        </default-button>
-        <default-button size="xs" class="mr-2" component="a" :href="externalLink" :target="externalLinkIn" v-show="btnExtLink">
-          <icon-external-link />
-        </default-button>
-        <select-control size="xxs" @change="handleFilterChanged" :selected="advanceFilterSelected" v-show="showAdvanceFilter">
-          <option v-for="filter in advanceFilter" v-bind:value="filter.value" :key="filter.key">
-            {{ filter.text }}
-          </option>
-        </select-control>
+      <div class="flex relative ml-auto flex-shrink-0 gap-2">
+        <button
+          v-show="buttonRefresh"
+          @click="fillData()"
+          class="px-2 py-1 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+        >
+          <Icon name="arrow-path" type="outline" class="w-4 h-4" />
+        </button>
+        <button
+          v-show="buttonReload"
+          @click="reloadPage()"
+          class="px-2 py-1 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+        >
+          <Icon name="arrow-path" type="outline" class="w-4 h-4" />
+        </button>
+        <a
+          v-show="btnExtLink"
+          :href="externalLink"
+          :target="externalLinkIn"
+          class="px-2 py-1 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition inline-flex items-center"
+        >
+          <Icon name="arrow-top-right-on-square" type="outline" class="w-4 h-4" />
+        </a>
+        <SelectControl
+          v-if="showAdvanceFilter"
+          v-model="advanceFilterSelected"
+          @selected="handleFilterChanged"
+          :options="advanceFilter"
+        />
       </div>
     </div>
-    <line-chart v-if="!loading" :chart-data="datacollection" :options="options"></line-chart>
-  </loading-card>
+    <line-chart :chart-data="datacollection" :options="options" :height="chartHeight"></line-chart>
+  </LoadingCard>
 </template>
 
 <script>
   import LineChart from '../pie-chart.vue';
-  import IconRefresh from './Icons/IconRefresh';
-  import IconExternalLink from './Icons/IconExternalLink';
+  import Icon from '@ui/components/Icon.vue';
 
   export default {
     components: {
-      IconExternalLink,
-      IconRefresh,
+      Icon,
       LineChart
     },
     data () {
@@ -43,7 +55,7 @@
       let i = 0;
 
       for ( let index in btnFilterList ) {
-        filledAdvancedList[i] = {value: index, text: btnFilterList[index]};
+        filledAdvancedList[i] = {value: index, label: btnFilterList[index]};
         i++;
       }
 
@@ -59,6 +71,7 @@
         chartTooltips: this.card.options.tooltips != undefined ? this.card.options.tooltips : undefined,
         sweetAlert: this.card.options.sweetAlert2 != undefined ? this.card.options.sweetAlert2 : undefined,
         chartPlugins: this.card.options.plugins != undefined ? this.card.options.plugins : false,
+        chartHeight: this.card.options.chartHeight != undefined ? this.card.options.chartHeight : 250,
         chartLayout: this.card.options.layout != undefined ? this.card.options.layout :
           {
             padding: {
@@ -80,12 +93,12 @@
         showAdvanceFilter: this.card.model == 'custom' || this.card.model == undefined ? false : this.card.options.btnFilter == true ? true : false ,
         advanceFilterSelected: this.card.options.btnFilterDefault != undefined ? this.card.options.btnFilterDefault : 'QTD',
         advanceFilter: this.card.options.btnFilterList != undefined ? filledAdvancedList : [
-          { text: 'Year to Date', value: 'YTD' },
-          { text: 'Quarter to Date', value: 'QTD' },
-          { text: 'Month to Date', value: 'MTD' },
-          { text: '30 Days', value: 30 },
-          { text: '60 Days', value: 60 },
-          { text: '365 Days', value: 365 },
+          { label: 'Year to Date', value: 'YTD' },
+          { label: 'Quarter to Date', value: 'QTD' },
+          { label: 'Month to Date', value: 'MTD' },
+          { label: '30 Days', value: 30 },
+          { label: '60 Days', value: 60 },
+          { label: '365 Days', value: 365 },
         ],
       }
     },
@@ -106,7 +119,6 @@
       },
 
       handleFilterChanged(value) {
-        this.advanceFilterSelected = value;
         this.fillData();
       },
       fillData () {
