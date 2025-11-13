@@ -199,6 +199,18 @@ class TotalRecordsController extends Controller
                     ->orderBy('catorder', 'asc');
             }
 
+            // Apply global filters from nova-global-filter (matching GlobalFilterable trait logic)
+            if ($request->has('filters')) {
+                foreach (json_decode($request->filters, true) as $filter => $value) {
+                    if (empty($value)) {
+                        continue;
+                    }
+                    if (class_exists($filter)) {
+                        $query = (new $filter)->apply($request, $query, $value);
+                    }
+                }
+            }
+
             if($options['queryFilter'] ?? false){
                 $queryFilter = $options['queryFilter'];
                 foreach($queryFilter as $qF){
@@ -216,7 +228,7 @@ class TotalRecordsController extends Controller
                         } else if($qF['operator']=='IN'){
                             $query->whereIn($qF['key'], $qF['value']);
                         } else if($qF['operator']=='NOT IN'){
-                            $query->whereIn($qF['key'], $qF['value']);
+                            $query->whereNotIn($qF['key'], $qF['value']);
                         } else if($qF['operator']=='BETWEEN') {
                             $query->whereBetween($qF['key'], $qF['value']);
                         } else if($qF['operator']=='NOT BETWEEN') {
@@ -225,6 +237,12 @@ class TotalRecordsController extends Controller
                     }
                 }
             }
+
+            // Apply range filter if metric specifies a column and value is selected
+            if (isset($options['rangeFilterColumn']) && $advanceFilterSelected && $advanceFilterSelected !== 'all') {
+                $query->where($options['rangeFilterColumn'], $advanceFilterSelected);
+            }
+
             $dataSet = $query->get();
             $xAxis = collect($dataSet)->map(function ($item, $key) use ($unitOfMeasurement){
                 if($unitOfMeasurement=='week'){

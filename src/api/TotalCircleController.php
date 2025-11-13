@@ -87,6 +87,18 @@ class TotalCircleController extends Controller
                 $query->where($xAxisColumn, '>=', Carbon::now()->firstOfMonth()->subMonth($dataForLast-1));
             }
 
+            // Apply global filters from nova-global-filter (matching GlobalFilterable trait logic)
+            if ($request->has('filters')) {
+                foreach (json_decode($request->filters, true) as $filter => $value) {
+                    if (empty($value)) {
+                        continue;
+                    }
+                    if (class_exists($filter)) {
+                        $query = (new $filter)->apply($request, $query, $value);
+                    }
+                }
+            }
+
             if($options['queryFilter'] ?? false){
                 $queryFilter = $options['queryFilter'];
                 foreach($queryFilter as $qF){

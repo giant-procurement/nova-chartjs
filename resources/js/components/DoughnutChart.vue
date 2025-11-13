@@ -40,8 +40,10 @@
 <script>
   import LineChart from '../doughnut-chart.vue';
   import Icon from '@ui/components/Icon.vue';
+  import GlobalFilterBehavior from '../mixins/GlobalFilterBehavior';
 
   export default {
+    mixins: [GlobalFilterBehavior],
     components: {
       Icon,
       LineChart
@@ -49,14 +51,23 @@
     data () {
       this.card.options = this.card.options != undefined ? this.card.options : false;
 
-      // setup btn filter list
-      const btnFilterList = this.card.options.btnFilterList;
-      let filledAdvancedList = [];
-      let i = 0;
+      // Use card.filterOptions or fall back to old btnFilterList
+      let filterOptions = [];
+      let hasFilterOptions = false;
+      let selectedValue = null;
 
-      for ( let index in btnFilterList ) {
-        filledAdvancedList[i] = {value: index, label: btnFilterList[index]};
-        i++;
+      if (this.card.filterOptions && this.card.filterOptions.length > 0) {
+        filterOptions = this.card.filterOptions;
+        hasFilterOptions = true;
+        selectedValue = this.card.selectedFilterKey || this.card.filterOptions[0]?.value;
+      } else if (this.card.options.btnFilterList) {
+        const btnFilterList = this.card.options.btnFilterList;
+        let i = 0;
+        for ( let index in btnFilterList ) {
+          filterOptions[i] = {value: index, label: btnFilterList[index]};
+          i++;
+        }
+        selectedValue = this.card.options.btnFilterDefault || filterOptions[0]?.value;
       }
 
       return {
@@ -90,16 +101,9 @@
                 fontFamily: "'Nunito'"
             }
           },
-        showAdvanceFilter: this.card.model == 'custom' || this.card.model == undefined ? false : this.card.options.btnFilter == true ? true : false ,
-        advanceFilterSelected: this.card.options.btnFilterDefault != undefined ? this.card.options.btnFilterDefault : 'QTD',
-        advanceFilter: this.card.options.btnFilterList != undefined ? filledAdvancedList : [
-          { label: 'Year to Date', value: 'YTD' },
-          { label: 'Quarter to Date', value: 'QTD' },
-          { label: 'Month to Date', value: 'MTD' },
-          { label: '30 Days', value: 30 },
-          { label: '60 Days', value: 60 },
-          { label: '365 Days', value: 365 },
-        ],
+        showAdvanceFilter: this.card.model == 'custom' || this.card.model == undefined ? false : (hasFilterOptions || this.card.options.btnFilter == true),
+        advanceFilterSelected: selectedValue,
+        advanceFilter: filterOptions,
       }
     },
     computed: {
@@ -220,19 +224,29 @@
             }
           }
         } else {
-          if(this.showAdvanceFilter == true) this.card.options.advanceFilterSelected = this.advanceFilterSelected != undefined ? this.advanceFilterSelected : false;
+          // Set advanceFilterSelected if we have a filter dropdown
+          if(this.showAdvanceFilter) {
+            this.card.options.advanceFilterSelected = this.advanceFilterSelected;
+          }
 
           // Use Model
           this.loading = true;
+          const params = {
+            model: this.card.model,
+            series: this.card.series,
+            options: this.mergeGlobalFilters(this.card.options),
+            join: this.card.join,
+            col_xaxis: this.card.col_xaxis,
+            expires: 0,
+          };
+
+          const filtersParam = this.getGlobalFiltersParam();
+          if (filtersParam) {
+            params.filters = filtersParam;
+          }
+
           Nova.request().get("/nova-vendor/coroowicaksono/check-data/circle-endpoint", {
-            params: {
-              model: this.card.model,
-              series: this.card.series,
-              options: this.card.options,
-              join: this.card.join,
-              col_xaxis: this.card.col_xaxis,
-              expires: 0,
-            },
+            params: params,
           })
           .then(({ data }) => {
             this.datacollection = {

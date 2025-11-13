@@ -13,6 +13,10 @@ class AreaChart extends Card
      */
     public $width = 'full';
 
+    protected $filterOptions = [];
+
+    protected $selectedFilterKey = null;
+
     public function __construct($component = null)
     {
 
@@ -103,5 +107,29 @@ class AreaChart extends Card
     public function join(string $joinTable, string $joinColumnFirst, string $joinEqual, string $joinColumnSecond): self
     {
         return $this->withMeta(['join' => ['joinTable' => $joinTable, 'joinColumnFirst' => $joinColumnFirst, 'joinEqual' => $joinEqual, 'joinColumnSecond' => $joinColumnSecond]]);
+    }
+
+    public function filterOptions(array $filterOptions): self
+    {
+        $this->filterOptions = $filterOptions;
+
+        return $this;
+    }
+
+    public function defaultFilter(string $key): self
+    {
+        $this->selectedFilterKey = $key;
+
+        return $this;
+    }
+    public function jsonSerialize(): array
+    {
+        return array_merge(parent::jsonSerialize(), [
+            'selectedFilterKey' => $this->selectedFilterKey,
+            'filterOptions' => collect($this->filterOptions)
+                ->map(static fn ($filterOption, $key) => ['label' => $filterOption, 'value' => $key])
+                ->values()
+                ->all(),
+        ]);
     }
 }
