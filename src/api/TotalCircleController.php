@@ -116,7 +116,7 @@ class TotalCircleController extends Controller
                         } else if($qF['operator']=='IN'){
                             $query->whereIn($qF['key'], $qF['value']);
                         } else if($qF['operator']=='NOT IN'){
-                            $query->whereIn($qF['key'], $qF['value']);
+                            $query->whereNotIn($qF['key'], $qF['value']);
                         } else if($qF['operator']=='BETWEEN') {
                             $query->whereBetween($qF['key'], $qF['value']);
                         } else if($qF['operator']=='NOT BETWEEN') {
