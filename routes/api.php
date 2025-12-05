@@ -13,3 +13,4 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/endpoint', \Coroowicaksono\ChartJsIntegration\Api\TotalRecordsController::class . '@handle');
 Route::get('/circle-endpoint', \Coroowicaksono\ChartJsIntegration\Api\TotalCircleController::class . '@handle');
+Route::get('/geo-endpoint', \Coroowicaksono\ChartJsIntegration\Api\TotalGeoController::class . '@handle');

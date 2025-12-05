@@ -28,7 +28,9 @@ class TotalCircleController extends Controller
 
         $advanceFilterSelected = $options['advanceFilterSelected'] ?? false;
         $dataForLast = $options['latestData'] ?? 3;
-        $calculation = $options['sum'] ?? 1;
+        $calculation = $options['sum'] ?? $options['avg'] ?? 1;
+        $aggregateFunction = isset($options['avg']) ? 'AVG' : 'SUM';
+        $elseValue = isset($options['avg']) ? 'NULL' : '0'; // AVG ignores NULLs, SUM needs 0
         $request->validate(['model'   => ['bail', 'required', 'min:1', 'string']]);
         $model = $request->input('model');
         $modelInstance = new $model;
@@ -48,27 +50,37 @@ class TotalCircleController extends Controller
                     $filter = (object) $seriesData->filter;
                     $labelList[$seriesKey] = $seriesData->label;
                     if(empty($filter->value)&&isset($filter->operator)&&($filter->operator=='IS NULL' || $filter->operator=='IS NOT NULL')) {
-                        $seriesSql .= ", SUM(CASE WHEN ".$filter->key." ".$filter->operator." then ".$calculation." else 0 end) as \"".$labelList[$seriesKey]."\"";
+                        $seriesSql .= ", ".$aggregateFunction."(CASE WHEN ".$filter->key." ".$filter->operator." then ".$calculation." else ".$elseValue." end) as \"".$labelList[$seriesKey]."\"";
                     } else if(empty($filter->value)){
-                        $seriesSql .= ", SUM(CASE WHEN ";
+                        $seriesSql .= ", ".$aggregateFunction."(CASE WHEN ";
                         $countFilter = count((array) $filter);
                         foreach($filter as $keyFilter => $listFilter){
                             $listFilter = (object) $listFilter;
                             $seriesSql .= " ".$listFilter->key." ".($listFilter->operator ?? "=")." '".$listFilter->value."' ";
                             $seriesSql .= $countFilter-1 != $keyFilter ? " AND " : "";
                         }
-                        $seriesSql .= "then ".$calculation." else 0 end) as \"".$labelList[$seriesKey]."\"";
+                        $seriesSql .= "then ".$calculation." else ".$elseValue." end) as \"".$labelList[$seriesKey]."\"";
                     } else {
-                        $seriesSql .= ", SUM(CASE WHEN ".$filter->key." ".($filter->operator ?? "=")." '".$filter->value."' then ".$calculation." else 0 end) as \"".$labelList[$seriesKey]."\"";
+                        $seriesSql .= ", ".$aggregateFunction."(CASE WHEN ".$filter->key." ".($filter->operator ?? "=")." '".$filter->value."' then ".$calculation." else ".$elseValue." end) as \"".$labelList[$seriesKey]."\"";
                     }
                 }
             }
-            if(count($join)){
-                $joinInformation = $join;
-                $query = $model::selectRaw('SUM('.$calculation.') counted'.$seriesSql)
-                    ->join($joinInformation['joinTable'], $joinInformation['joinColumnFirst'], $joinInformation['joinEqual'], $joinInformation['joinColumnSecond']);
-            } else {
-                $query = $model::selectRaw('SUM('.$calculation.') counted'.$seriesSql);
+            $query = $model::selectRaw($aggregateFunction.'('.$calculation.') counted'.$seriesSql);
+
+            // Apply single join from ->join() method (backwards compatible)
+            if (count($join)) {
+                $query->join($join['joinTable'], $join['joinColumnFirst'], $join['joinEqual'], $join['joinColumnSecond']);
+            }
+
+            // Apply multiple joins from options['joins'] array
+            // Format: ['table', 'col1', '=', 'col2'] or ['table', 'col1', '=', 'col2', 'left']
+            if (!empty($options['joins'])) {
+                foreach ($options['joins'] as $j) {
+                    $type = $j[4] ?? 'inner';
+                    $type === 'left'
+                        ? $query->leftJoin($j[0], $j[1], $j[2], $j[3])
+                        : $query->join($j[0], $j[1], $j[2], $j[3]);
+                }
             }
 
             if(is_numeric($advanceFilterSelected)){

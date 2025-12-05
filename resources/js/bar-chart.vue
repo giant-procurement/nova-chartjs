@@ -1,7 +1,7 @@
 <template>
   <Bar
-      :chart-data="chartData"
-      :chart-options="options"
+      :data="chartData"
+      :options="options"
       :height="height"
       :plugins="plugins"
   />

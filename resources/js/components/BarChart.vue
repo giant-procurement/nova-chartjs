@@ -33,7 +33,9 @@
         />
       </div>
     </div>
-    <line-chart :chart-data="datacollection" :options="options" :height="chartHeight"></line-chart>
+    <div :style="{ height: chartHeight + 'px', position: 'relative' }">
+      <line-chart :data="datacollection" :options="options" :height="chartHeight"></line-chart>
+    </div>
   </LoadingCard>
 </template>
 
@@ -71,7 +73,7 @@
       }
 
       return {
-        datacollection: {},
+        datacollection: { labels: [], datasets: [] },
         options: {},
         loading: false,
         buttonRefresh: this.card.options.btnRefresh,
@@ -129,14 +131,14 @@
           ...this.card.options,
           layout: this.chartLayout,
           scales: {
-            yAxes: {
-              ...this.card.options.scales?.yAxes || {},
+            y: {
+              ...this.card.options.scales?.y || this.card.options.scales?.yAxes || {},
               ticks: {
                 maxTicksLimit: 5,
-                ...this.card.options.scales?.yAxes?.ticks || {},
+                ...this.card.options.scales?.y?.ticks || this.card.options.scales?.yAxes?.ticks || {},
                 font: {
                   size: 10,
-                  ...this.card.options.scales?.yAxes?.ticks?.font || {},
+                  ...this.card.options.scales?.y?.ticks?.font || this.card.options.scales?.yAxes?.ticks?.font || {},
                 },
                 callback: function(num, index, values) {
                   if (num >= 1000000000) {
@@ -152,14 +154,14 @@
                 }
               }
             },
-            xAxes: {
-              ...this.card.options.scales?.xAxes || {},
+            x: {
+              ...this.card.options.scales?.x || this.card.options.scales?.xAxes || {},
               ticks: {
-                ...this.card.options.scales?.xAxes?.ticks || {},
+                ...this.card.options.scales?.x?.ticks || this.card.options.scales?.xAxes?.ticks || {},
                 font: {
                   lineHeight: 0.8,
                   size: 10,
-                  ...this.card.options.scales?.xAxes?.ticks?.font || {},
+                  ...this.card.options.scales?.x?.ticks?.font || this.card.options.scales?.xAxes?.ticks?.font || {},
                 }
               }
             }

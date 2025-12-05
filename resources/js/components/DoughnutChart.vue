@@ -33,7 +33,9 @@
         />
       </div>
     </div>
-    <line-chart :chart-data="datacollection" :options="options" :height="chartHeight"></line-chart>
+    <div :style="{ height: chartHeight + 'px', position: 'relative' }">
+      <line-chart :data="datacollection" :options="options" :height="chartHeight"></line-chart>
+    </div>
   </LoadingCard>
 </template>
 
@@ -71,7 +73,7 @@
       }
 
       return {
-        datacollection: {},
+        datacollection: { labels: [], datasets: [] },
         options: {},
         loading: false,
         buttonRefresh: this.card.options.btnRefresh,

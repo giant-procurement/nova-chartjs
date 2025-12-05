@@ -1,6 +1,7 @@
 export default {
     data: () => ({
-        globalFilters: {}
+        globalFilters: {},
+        _initialFetchDone: false
     }),
 
     created() {
@@ -10,6 +11,11 @@ export default {
 
             if (filter.currentValue === '' || JSON.stringify(filter.currentValue) === JSON.stringify({})) {
                 delete this.globalFilters[filter.class];
+            }
+
+            // Skip refetch if this is the initial mount (mounted() already called fillData)
+            if (!this._initialFetchDone) {
+                return;
             }
 
             // Re-fetch chart data when global filter changes
@@ -24,6 +30,13 @@ export default {
 
             // Re-fetch chart data when filters reset
             this.fillData();
+        });
+    },
+
+    mounted() {
+        // Mark initial fetch as complete after component is fully mounted
+        this.$nextTick(() => {
+            this._initialFetchDone = true;
         });
     },
 
